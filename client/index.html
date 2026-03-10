@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Employee Tracker | Analytics Dashboard</title>
+    <title>HR Pulse | Analytics Dashboard</title>
     <style>
         :root { --primary: #1a73e8; --success: #27ae60; --danger: #ea4335; --dark: #202124; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8f9fa; color: var(--dark); }
@@ -40,13 +40,23 @@
         
         .rating-pill { background: #e8f0fe; color: var(--primary); padding: 5px 15px; border-radius: 15px; font-weight: bold; }
         .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.8rem; margin-top: 10px; text-decoration: underline; }
+
+        /* Hide buttons during Print */
+        @media print {
+            .navbar button, .card, .search-box, .btn-del, .btn-submit { display: none !important; }
+            .main-grid { display: block; }
+            .employee-item { break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
 
     <div class="navbar">
         <div style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">HR Pulse.io</div>
-        <div id="status-dot" style="color: var(--success);">● System Online</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="status-dot" style="color: var(--success); font-weight: 500;">● System Online</div>
+            <button onclick="location.reload()" style="background: #f1f3f4; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">Logout</button>
+        </div>
     </div>
 
     <div class="container">
@@ -102,15 +112,16 @@
             </div>
 
             <div>
+                <button class="btn-submit" style="background: var(--success); margin-bottom: 20px; margin-top: 0;" onclick="window.print()">
+                    🖨️ Print Performance Report
+                </button>
                 <input type="text" id="search" class="search-box" placeholder="Search by name, role, or department..." onkeyup="filterData()">
-                <div id="list-container">
-                    </div>
+                <div id="list-container"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // UPDATED: Now pointing to your live Render server instead of localhost
         const API = 'https://employee-tracker-api.onrender.com/employees';
         let store = [];
 
@@ -125,10 +136,9 @@
         }
 
         function updateDashboard(data) {
-            // Calculate Stats
             const total = data.length;
             const avg = total > 0 ? (data.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1) : "0.0";
-            const depts = new Set(data.map(e => e.department.toLowerCase())).size;
+            const depts = new Set(data.map(e => e.department?.toLowerCase() || 'other')).size;
 
             document.getElementById('stat-total').innerText = total;
             document.getElementById('stat-avg').innerText = avg;
@@ -159,8 +169,8 @@
             const term = document.getElementById('search').value.toLowerCase();
             const filtered = store.filter(e => 
                 e.name.toLowerCase().includes(term) || 
-                e.department.toLowerCase().includes(term) || 
-                e.role.toLowerCase().includes(term)
+                (e.department && e.department.toLowerCase().includes(term)) || 
+                (e.role && e.role.toLowerCase().includes(term))
             );
             renderList(filtered);
         }
@@ -177,15 +187,18 @@
 
             if(!data.name || !data.email) return alert("Required fields missing!");
 
-            await fetch(API, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            
-            // Clear and Refresh
-            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
-            init();
+            try {
+                await fetch(API, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+                init();
+            } catch (err) {
+                alert("Failed to save employee.");
+            }
         }
 
         async function deleteEmp(id) {
