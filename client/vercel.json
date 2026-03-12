@@ -1,20 +1,8 @@
 {
+  "version": 2,
   "rewrites": [
-    {
-      "source": "/login",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard.html"
-    },
-    {
-      "source": "/api/auth/:path*",
-      "destination": "https://employee-tracker-api.onrender.com/:path*"
-    },
-    {
-      "source": "/employees/:path*",
-      "destination": "https://employee-tracker-api.onrender.com/employees/:path*"
-    }
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/employees/:path*", "destination": "https://employee-tracker-api.onrender.com/employees/:path*" }
   ]
 }
