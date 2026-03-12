@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Pulse | Analytics Dashboard</title>
+    <title>HR Pulse | Dashboard</title>
     <style>
         :root { --primary: #1a73e8; --success: #27ae60; --danger: #ea4335; --dark: #202124; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8f9fa; color: var(--dark); }
@@ -17,35 +17,26 @@
         .stat-card div { font-size: 2rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
 
         .main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
-        
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; }
         
-        /* Form Styling */
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; }
         .btn-submit { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-submit:hover { background: #1557b0; }
 
-        /* Search & List */
-        .search-box { width: 100%; padding: 12px 20px; border: 2px solid #e1e4e8; border-radius: 30px; margin-bottom: 20px; outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--primary); }
+        .search-box { width: 100%; padding: 12px 20px; border: 2px solid #e1e4e8; border-radius: 30px; margin-bottom: 20px; outline: none; }
         
-        .employee-item { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        .employee-item:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .emp-info h3 { margin: 0; font-size: 1.1rem; }
-        .emp-meta { font-size: 0.85rem; color: #5f6368; margin: 5px 0; }
-        .emp-feedback { font-size: 0.9rem; font-style: italic; color: #3c4043; background: #f1f3f4; padding: 5px 10px; border-radius: 4px; display: inline-block; }
-        
+        .employee-item { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         .rating-pill { background: #e8f0fe; color: var(--primary); padding: 5px 15px; border-radius: 15px; font-weight: bold; }
-        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.8rem; margin-top: 10px; text-decoration: underline; }
+        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
 
-        /* Hide buttons during Print */
+        /* Print Mode - Clean Report */
         @media print {
-            .navbar button, .card, .search-box, .btn-del, .btn-submit { display: none !important; }
+            .navbar button, .card, .search-box, .btn-del, .btn-submit, .btn-print { display: none !important; }
             .main-grid { display: block; }
-            .employee-item { break-inside: avoid; }
+            body { background: white; }
         }
     </style>
 </head>
@@ -53,9 +44,9 @@
 
     <div class="navbar">
         <div style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">HR Pulse.io</div>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div id="status-dot" style="color: var(--success); font-weight: 500;">● System Online</div>
-            <button onclick="location.reload()" style="background: #f1f3f4; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">Logout</button>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="status-dot" style="color: var(--success);">● System Online</div>
+            <button onclick="logout()" style="background: #f1f3f4; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
     </div>
 
@@ -112,7 +103,7 @@
             </div>
 
             <div>
-                <button class="btn-submit" style="background: var(--success); margin-bottom: 20px; margin-top: 0;" onclick="window.print()">
+                <button class="btn-submit btn-print" style="background: var(--success); margin-bottom: 20px; margin-top: 0;" onclick="window.print()">
                     🖨️ Print Performance Report
                 </button>
                 <input type="text" id="search" class="search-box" placeholder="Search by name, role, or department..." onkeyup="filterData()">
@@ -122,6 +113,18 @@
     </div>
 
     <script>
+        // 1. SECURITY CHECK: Kick out if not logged in
+        const session = localStorage.getItem('user_session');
+        if (!session) {
+            window.location.href = 'login.html';
+        }
+
+        // 2. LOGOUT FUNCTION
+        function logout() {
+            localStorage.removeItem('user_session');
+            window.location.href = 'login.html';
+        }
+
         const API = 'https://employee-tracker-api.onrender.com/employees';
         let store = [];
 
@@ -138,12 +141,11 @@
         function updateDashboard(data) {
             const total = data.length;
             const avg = total > 0 ? (data.reduce((acc, curr) => acc + curr.rating, 0) / total).toFixed(1) : "0.0";
-            const depts = new Set(data.map(e => e.department?.toLowerCase() || 'other')).size;
+            const depts = new Set(data.map(e => e.department?.toLowerCase())).size;
 
             document.getElementById('stat-total').innerText = total;
             document.getElementById('stat-avg').innerText = avg;
             document.getElementById('stat-dept').innerText = depts;
-
             renderList(data);
         }
 
@@ -151,16 +153,13 @@
             const container = document.getElementById('list-container');
             container.innerHTML = data.map(e => `
                 <div class="employee-item">
-                    <div class="emp-info">
-                        <h3>${e.name}</h3>
-                        <div class="emp-meta"><strong>${e.role}</strong> • ${e.department}</div>
-                        <div class="emp-feedback">"${e.feedback || 'No comments'}"</div>
-                        <br><button class="btn-del" onclick="deleteEmp(${e.id})">Remove Record</button>
+                    <div>
+                        <h3 style="margin:0">${e.name}</h3>
+                        <div style="font-size:0.85rem; color:#666"><strong>${e.role}</strong> • ${e.department}</div>
+                        <div style="font-style:italic; font-size:0.9rem; margin-top:5px">"${e.feedback || 'No comments'}"</div>
+                        <button class="btn-del" onclick="deleteEmp(${e.id})">Remove Record</button>
                     </div>
-                    <div style="text-align:right">
-                        <div class="rating-pill">${e.rating}/5</div>
-                        <div style="font-size:0.7rem; margin-top:5px; color:#999;">ID: #${e.id}</div>
-                    </div>
+                    <div class="rating-pill">${e.rating}/5</div>
                 </div>
             `).join('');
         }
@@ -169,8 +168,8 @@
             const term = document.getElementById('search').value.toLowerCase();
             const filtered = store.filter(e => 
                 e.name.toLowerCase().includes(term) || 
-                (e.department && e.department.toLowerCase().includes(term)) || 
-                (e.role && e.role.toLowerCase().includes(term))
+                e.department.toLowerCase().includes(term) || 
+                e.role.toLowerCase().includes(term)
             );
             renderList(filtered);
         }
@@ -187,28 +186,16 @@
 
             if(!data.name || !data.email) return alert("Required fields missing!");
 
-            try {
-                await fetch(API, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                
-                document.querySelectorAll('input, textarea').forEach(el => el.value = '');
-                init();
-            } catch (err) {
-                alert("Failed to save employee.");
-            }
+            await fetch(API, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            init();
         }
 
         async function deleteEmp(id) {
             if(confirm("Confirm Deletion?")) {
                 await fetch(`${API}/${id}`, {method: 'DELETE'});
-                init();
-            }
-        }
-
-        init();
-    </script>
-</body>
-</html>
