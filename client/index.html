@@ -3,65 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | HR Pulse</title>
+    <title>Secure Login | HR Pulse.io</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #1a73e8; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 12px; text-align: center; width: 300px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
-        button { width: 100%; padding: 10px; background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        :root { --primary: #1a73e8; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #1a73e8 0%, #764ba2 100%); }
+        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .toggle { margin-top: 20px; font-size: 0.9rem; color: #666; cursor: pointer; }
+        #status { margin-top: 15px; font-weight: bold; color: #1a73e8; display: none; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>HR Pulse.io</h1>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button id="btn" onclick="handleAuth()">Sign In / Register</button>
-        <p id="msg" style="display:none; color: orange;">Connecting to server...</p>
+        <p id="tagline">Cloud Performance Management</p>
+        <input type="email" id="email" placeholder="Business Email">
+        <input type="password" id="password" placeholder="Secure Password">
+        <button id="mainBtn" onclick="handleAuth()">Sign In</button>
+        <div id="status">Connecting...</div>
+        <div class="toggle" onclick="toggleMode()" id="toggleBtn">Create an account</div>
     </div>
 
     <script>
-        // If already logged in, go to dashboard
-        if (localStorage.getItem('user_session')) {
-            window.location.href = 'dashboard.html';
+        let isLogin = true;
+        const API_URL = 'https://employee-tracker-api.onrender.com';
+
+        if (localStorage.getItem('user_session')) { window.location.href = 'dashboard.html'; }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('mainBtn').innerText = isLogin ? "Sign In" : "Register Now";
+            document.getElementById('toggleBtn').innerText = isLogin ? "Already have an account? Sign In" : "Create an account";
         }
 
         async function handleAuth() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const msg = document.getElementById('msg');
-            msg.style.display = 'block';
+            if(!email || !password) return alert("Fields required");
+
+            document.getElementById('status').style.display = 'block';
+            const endpoint = isLogin ? '/login' : '/signup';
 
             try {
-                // We try Login first, if it fails, we try Signup
-                let res = await fetch('https://employee-tracker-api.onrender.com/login', {
+                const res = await fetch(API_URL + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-
-                let data = await res.json();
-
-                if (!res.ok) {
-                    // Try Signup if Login failed
-                    res = await fetch('https://employee-tracker-api.onrender.com/signup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
-                    });
-                    data = await res.json();
-                }
-
+                const data = await res.json();
                 if (res.ok) {
                     localStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = 'dashboard.html';
                 } else {
-                    alert(data.error || "Auth Failed");
-                    msg.style.display = 'none';
+                    alert(data.error);
+                    document.getElementById('status').style.display = 'none';
                 }
             } catch (err) {
-                alert("Server is waking up. Try again in 20 seconds.");
-                msg.style.display = 'none';
+                alert("Server is waking up... try again in 30 seconds.");
+                document.getElementById('status').style.display = 'none';
             }
         }
     </script>

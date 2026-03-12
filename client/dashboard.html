@@ -2,43 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | HR Pulse</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .nav { display: flex; justify-content: space-between; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn-logout { background: #ea4335; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        body { font-family: sans-serif; background: #f8f9fa; margin: 0; }
+        .nav { background: white; padding: 15px 30px; display: flex; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { padding: 40px; max-width: 800px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .btn-logout { background: #ff4757; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="nav">
-        <b style="color:#1a73e8">HR Pulse.io - Management Console</b>
+        <b style="color:#1a73e8">HR Pulse Console</b>
         <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
-    
-    <h1>Welcome to your Dashboard</h1>
-    <div id="data">Loading employees...</div>
+    <div class="container">
+        <div class="card">
+            <h2>Employee Performance Data</h2>
+            <div id="data">Loading...</div>
+        </div>
+    </div>
 
     <script>
-        if (!localStorage.getItem('user_session')) {
-            window.location.href = 'index.html';
-        }
+        if (!localStorage.getItem('user_session')) { window.location.href = 'index.html'; }
+        function logout() { localStorage.removeItem('user_session'); window.location.href = 'index.html'; }
 
-        function logout() {
-            localStorage.removeItem('user_session');
-            window.location.href = 'index.html';
-        }
-
-        async function load() {
+        async function loadData() {
             try {
                 const res = await fetch('https://employee-tracker-api.onrender.com/employees');
-                const employees = await res.json();
-                document.getElementById('data').innerHTML = employees.map(e => `<p>${e.name} - ${e.role}</p>`).join('');
-            } catch (e) {
-                document.getElementById('data').innerHTML = "Error loading data.";
-            }
+                const data = await res.json();
+                document.getElementById('data').innerHTML = data.map(e => `<p><b>${e.name}</b> - ${e.role} (${e.rating}/5)</p>`).join('');
+            } catch (e) { document.getElementById('data').innerText = "Error loading data."; }
         }
-        load();
+        loadData();
     </script>
 </body>
 </html>

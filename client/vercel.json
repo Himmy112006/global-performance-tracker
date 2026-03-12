@@ -1,8 +1,4 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/employees/:path*", "destination": "https://employee-tracker-api.onrender.com/employees/:path*" }
-  ]
+  "cleanUrls": true
 }
