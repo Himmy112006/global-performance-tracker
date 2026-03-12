@@ -4,37 +4,58 @@
     <meta charset="UTF-8">
     <title>Dashboard | HR Pulse</title>
     <style>
-        body { font-family: sans-serif; background: #f8f9fa; margin: 0; }
-        .nav { background: white; padding: 15px 30px; display: flex; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .container { padding: 40px; max-width: 800px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .btn-logout { background: #ff4757; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        :root { --primary: #1a73e8; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; }
+        .navbar { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { padding: 40px; max-width: 900px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-logout { background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .emp-list { margin-top: 20px; }
+        .emp-card { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <b style="color:#1a73e8">HR Pulse Console</b>
+    <div class="navbar">
+        <h2 style="margin:0; color:var(--primary)">HR Pulse Console</h2>
         <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
     <div class="container">
         <div class="card">
-            <h2>Employee Performance Data</h2>
-            <div id="data">Loading...</div>
+            <h3>Employee Performance Overview</h3>
+            <div id="data-list" class="emp-list">Loading real-time data...</div>
         </div>
     </div>
 
     <script>
         if (!localStorage.getItem('user_session')) { window.location.href = 'index.html'; }
-        function logout() { localStorage.removeItem('user_session'); window.location.href = 'index.html'; }
 
-        async function loadData() {
+        function logout() {
+            localStorage.removeItem('user_session');
+            window.location.href = 'index.html';
+        }
+
+        async function fetchEmployees() {
             try {
                 const res = await fetch('https://employee-tracker-api.onrender.com/employees');
                 const data = await res.json();
-                document.getElementById('data').innerHTML = data.map(e => `<p><b>${e.name}</b> - ${e.role} (${e.rating}/5)</p>`).join('');
-            } catch (e) { document.getElementById('data').innerText = "Error loading data."; }
+                const container = document.getElementById('data-list');
+                
+                if (data.length === 0) {
+                    container.innerHTML = "No employees found.";
+                    return;
+                }
+
+                container.innerHTML = data.map(e => `
+                    <div class="emp-card">
+                        <span><strong>${e.name}</strong> (${e.role})</span>
+                        <span style="color:var(--primary)">Rating: ${e.rating}/5</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                document.getElementById('data-list').innerText = "Failed to load data.";
+            }
         }
-        loadData();
+        fetchEmployees();
     </script>
 </body>
 </html>
