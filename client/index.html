@@ -5,16 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Login | HR Pulse.io</title>
     <style>
-        :root { --primary: #1a73e8; --accent: #764ba2; }
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(135deg, #1a73e8 0%, #764ba2 100%);
-        }
-        .card { 
-            background: white; padding: 40px; border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 350px; text-align: center;
-        }
+        :root { --primary: #1a73e8; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #1a73e8 0%, #764ba2 100%); }
+        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 350px; text-align: center; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .toggle { margin-top: 20px; font-size: 0.9rem; color: #666; cursor: pointer; text-decoration: underline; }
@@ -24,8 +17,8 @@
 <body>
     <div class="card">
         <h1>HR Pulse.io</h1>
-        <p>Management Portal</p>
-        <input type="email" id="email" placeholder="Business Email">
+        <p>Admin Console</p>
+        <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password (min 6 chars)">
         <button id="mainBtn" onclick="handleAuth()">Sign In</button>
         <div id="status"></div>
@@ -49,33 +42,27 @@
             const password = document.getElementById('password').value;
             const statusDiv = document.getElementById('status');
 
-            if(!email || !password) return alert("Please fill all fields.");
-            if(password.length < 6) return alert("Password must be at least 6 characters.");
-
+            if(!email || !password) return alert("Fields required");
             statusDiv.style.display = 'block';
-            statusDiv.innerText = "Authenticating...";
+            statusDiv.innerText = "Processing...";
 
             const endpoint = isLogin ? '/login' : '/signup';
-
             try {
                 const res = await fetch(API_URL + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                
                 const data = await res.json();
-
                 if (res.ok) {
                     localStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = 'dashboard.html';
                 } else {
-                    // This shows the REAL error from Supabase
-                    alert("Error: " + data.error);
+                    alert(data.error);
                     statusDiv.innerText = data.error;
                 }
             } catch (err) {
-                alert("Server connection failed. Wait 30s for Render to wake up.");
+                alert("Server waking up... wait 20s");
                 statusDiv.style.display = 'none';
             }
         }
