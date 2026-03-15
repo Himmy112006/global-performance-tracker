@@ -10,8 +10,9 @@
         .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 350px; text-align: center; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .toggle { margin-top: 20px; font-size: 0.9rem; color: #666; cursor: pointer; text-decoration: underline; }
-        #status { margin-top: 15px; font-weight: bold; color: #d93025; display: none; }
+        #status { margin-top: 15px; font-weight: bold; color: #1a73e8; display: none; }
     </style>
 </head>
 <body>
@@ -21,7 +22,7 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password (min 6 chars)">
         <button id="mainBtn" onclick="handleAuth()">Sign In</button>
-        <div id="status"></div>
+        <div id="status">Processing...</div>
         <div class="toggle" onclick="toggleMode()" id="toggleBtn">Need an account? Register</div>
     </div>
 
@@ -40,31 +41,52 @@
         async function handleAuth() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const btn = document.getElementById('mainBtn');
             const statusDiv = document.getElementById('status');
 
-            if(!email || !password) return alert("Fields required");
+            if(!email || !password) return alert("Please enter both email and password.");
+            
+            btn.disabled = true;
             statusDiv.style.display = 'block';
-            statusDiv.innerText = "Processing...";
+            statusDiv.innerText = "Connecting to Secure Server...";
 
             const endpoint = isLogin ? '/login' : '/signup';
+            
             try {
+                // Set a 30-second timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+
                 const res = await fetch(API_URL + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
                 const data = await res.json();
+
                 if (res.ok) {
                     localStorage.setItem('user_session', JSON.stringify(data.user));
                     window.location.href = 'dashboard.html';
                 } else {
-                    alert(data.error);
-                    statusDiv.innerText = data.error;
+                    alert("Auth Error: " + (data.error || "Unknown Error"));
+                    resetUI();
                 }
             } catch (err) {
-                alert("Server waking up... wait 20s");
-                statusDiv.style.display = 'none';
+                if (err.name === 'AbortError') {
+                    alert("Server took too long to respond. Please try again in 10 seconds.");
+                } else {
+                    alert("Connection Failed. Make sure your Render server is awake.");
+                }
+                resetUI();
             }
+        }
+
+        function resetUI() {
+            document.getElementById('mainBtn').disabled = false;
+            document.getElementById('status').style.display = 'none';
         }
     </script>
 </body>
